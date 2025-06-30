@@ -1,55 +1,44 @@
 import streamlit as st
-from difflib import ndiff
-from pykospacing import Spacing
+import openai
 
-st.set_page_config(page_title="높임말 & 맞춤법 교정기", layout="centered")
-st.title("📝 높임말 & 맞춤법 교정 챗봇")
+# Streamlit 앱 설정
+st.set_page_config(page_title="GPT 맞춤법 & 높임말 교정기", layout="centered")
+st.title("🤖 GPT 기반 맞춤법 & 높임말 교정 챗봇")
 
-# 사용자 입력 받기
-user_input = st.text_area("✍️ 아이가 쓴 글을 붙여넣으세요:", height=250)
+# OpenAI API 키 설정 (직접 넣기보다는 secrets.toml 사용 추천)
+openai.api_key = st.secrets["OPENAI_API_KEY"]  # secrets.toml에 저장했다고 가정
 
-# 띄어쓰기 보정기 (pykospacing 사용)
-spacing = Spacing()
+# 사용자 입력
+user_input = st.text_area("✍️ 문장을 입력하세요:", height=250)
 
-def fix_spacing(text):
-    return spacing(text)
-
-# 교정 함수
-def correct_text(text):
-    corrections = {
-        "유나라고해": "유나라고 해",
-        "줬다": "드렸어요",
-        "했어": "했습니다",
-        "봤다": "보았습니다",
-        "먹었어": "드셨어요",
-        "갔어": "가셨어요",
-        "엄마가 말했다": "어머님께서 말씀하셨어요",
-        "아빠가 줬다": "아버지께서 주셨어요"
-    }
-    for wrong, right in corrections.items():
-        text = text.replace(wrong, right)
-    return text
-
-# 교정 비교 출력 함수
-def show_diff(original, corrected):
-    diff = list(ndiff(original.split(), corrected.split()))
-    added = [d[2:] for d in diff if d.startswith('+ ')]
-    removed = [d[2:] for d in diff if d.startswith('- ')]
-    st.markdown("### 🔍 변경된 단어:")
-    st.write(f"- **추가됨:** {', '.join(added) if added else '없음'}")
-    st.write(f"- **제거됨:** {', '.join(removed) if removed else '없음'}")
+def correct_text_gpt(text):
+    prompt = (
+        "다음 문장의 맞춤법, 띄어쓰기, 높임말을 자연스럽고 올바르게 고쳐주세요. "
+        "문장 뜻은 바꾸지 말고, 어른에게 하는 말투로 높임말을 사용하세요.\n\n"
+        f"문장: {text}\n\n"
+        "수정된 문장:"
+    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=300,
+        )
+        corrected = response.choices[0].message.content.strip()
+        return corrected
+    except Exception as e:
+        return f"오류가 발생했습니다: {e}"
 
 # 버튼 클릭 시 교정 실행
 if st.button("✨ 교정하기"):
     if user_input.strip() == "":
-        st.warning("먼저 글을 입력해주세요!")
+        st.warning("먼저 문장을 입력해주세요!")
     else:
         with st.spinner("교정 중입니다..."):
-            spaced = fix_spacing(user_input)
-            corrected = correct_text(spaced)
-            st.subheader("✅ 교정된 글")
-            st.success(corrected)
-            show_diff(user_input, corrected)
+            corrected_text = correct_text_gpt(user_input)
+            st.subheader("✅ 교정된 문장")
+            st.success(corrected_text)
 
 st.markdown("---")
-st.markdown("💡 예시: 안녕 나는 챗봇이라고해. 내가 책을 만들었어. 한번 읽어볼래??")
+st.markdown("💡 예시: 안녕 나는 유나라고해. 내가 책을 만들었어. 한번 읽어볼래??")
