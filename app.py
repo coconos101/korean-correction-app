@@ -1,5 +1,6 @@
 import streamlit as st
 from difflib import ndiff
+from pykospacing import Spacing
 
 st.set_page_config(page_title="높임말 & 맞춤법 교정기", layout="centered")
 st.title("📝 높임말 & 맞춤법 교정 챗봇")
@@ -7,13 +8,11 @@ st.title("📝 높임말 & 맞춤법 교정 챗봇")
 # 사용자 입력 받기
 user_input = st.text_area("✍️ 아이가 쓴 글을 붙여넣으세요:", height=250)
 
-# 띄어쓰기 자동 보정 (간단한 rule 기반 예시)
+# 띄어쓰기 보정기 (pykospacing 사용)
+spacing = Spacing()
+
 def fix_spacing(text):
-    text = text.replace("내가말했어", "내가 말했어")
-    text = text.replace("엄마가말씀하셨다", "엄마가 말씀하셨다")
-    text = text.replace("한번", "한 번")
-    text = text.replace("읽어볼래??", "읽어 볼래요?")
-    return text
+    return spacing(text)
 
 # 교정 함수
 def correct_text(text):
@@ -53,4 +52,4 @@ if st.button("✨ 교정하기"):
             show_diff(user_input, corrected)
 
 st.markdown("---")
-st.markdown("💡 예시: 안녕 나는 유나라고해. 내가 책을 만들었어. 한번 읽어볼래??")
+st.markdown("💡 예시: 안녕 나는 챗봇이라고해. 내가 책을 만들었어. 한번 읽어볼래??")
